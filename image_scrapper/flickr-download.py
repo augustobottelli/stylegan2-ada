@@ -30,10 +30,14 @@ def is_true(str):
 class FlickrImageDownload:
     def __init__(self):
         self.config = configparser.ConfigParser()
-        self.config.read("config_flickr.ini")
-        logging.config.fileConfig("logging.properties")
-        
-        self.config_path = self.config['Download']['path']
+        self.path = os.path.dirname(__file__)
+        self.config.read(os.path.join(self.path, "config_flickr.ini"))
+        logging.config.fileConfig(os.path.join(self.path, "logging.properties"))
+        self.folder = self.config['Download']['folder']
+        self.config_path = os.path.join(self.path, self.folder)
+        logging.info(f"Loading images into {self.config_path}")
+        if not os.path.exists(self.config_path):
+            os.makedirs(self.config_path)
         self.config_prefix = self.config['Download']['prefix']
         self.config_search = self.config['Download']['search']
         self.config_update_minutes = int(self.config['Download']['update_minutes'])
