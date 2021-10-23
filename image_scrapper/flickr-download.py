@@ -1,7 +1,6 @@
 # Flickr Download, by Jeff Heaton (http://www.heatonresearch.com)
 # https://github.com/jeffheaton/pyimgdata
 # Copyright 2020, MIT License
-import flickrapi
 import requests
 import logging
 import logging.config
@@ -10,10 +9,13 @@ import configparser
 import time
 import csv
 import sys
-from urllib.request import urlretrieve
-from PIL import Image
 from io import BytesIO
 from hashlib import sha256
+from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import cpu_count
+
+from PIL import Image
+import flickrapi
 
 # https://code.flickr.net/2008/08/19/standard-photos-response-apis-for-civilized-age/
 
@@ -175,10 +177,21 @@ class FlickrImageDownload:
                 csvwriter.writerow(["url", "file"])
                 csvwriter.writerows(self.sources)
 
+    def get_photos(self, photo):
+        url = photo.get("url_c")
+        img = self.obtain_photo(photo)
+        if img:
+            path = self.check_to_keep_photo(url, img)
+            if path:
+                img = self.process_image(img, path)
+                img.save(path)
+
+        if self.track_progress():
+            return photo
+
     def run(self):
         logging.info("Starting...")
         self.reset_counts()
-
         photos = self.flickr.walk(
             text=self.config_search,
             tag_mode="all",
@@ -188,18 +201,8 @@ class FlickrImageDownload:
             sort="relevance",
             # license='0'
         )
-
-        for photo in photos:
-            url = photo.get("url_c")
-            img = self.obtain_photo(photo)
-            if img:
-                path = self.check_to_keep_photo(url, img)
-                if path:
-                    img = self.process_image(img, path)
-                    img.save(path)
-
-            if self.track_progress():
-                break
+        with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+            executor.map(self.get_photos, photos)
 
         self.write_sources()
         elapsed_time = time.time() - self.start_time
