@@ -29,14 +29,18 @@ def is_true(str):
     return str.lower()[0] == "t"
 
 
+def handle_path(dirname):
+    base_path = os.path.dirname(__file__)
+    full_path = os.path.join(base_path, dirname)
+    return full_path
+
+
 class FlickrImageDownload:
     def __init__(self):
         self.config = configparser.ConfigParser()
-        self.path = os.path.dirname(__file__)
-        self.config.read(os.path.join(self.path, "config_flickr.ini"))
-        logging.config.fileConfig(os.path.join(self.path, "logging.properties"))
-        self.folder = self.config["Download"]["folder"]
-        self.config_path = os.path.join(self.path, self.folder)
+        self.config.read(handle_path("config_flickr.ini"))
+        logging.config.fileConfig(handle_path("logging.properties"))
+        self.config_path = handle_path(self.config["Download"]["folder"])
         logging.info(f"Loading images into {self.config_path}")
         if not os.path.exists(self.config_path):
             os.makedirs(self.config_path)
