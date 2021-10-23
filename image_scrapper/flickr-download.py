@@ -187,7 +187,7 @@ class FlickrImageDownload:
                 img.save(path)
 
         if self.track_progress():
-            return photo
+            return None
 
     def run(self):
         logging.info("Starting...")
